@@ -1,16 +1,27 @@
 version: 0.2
 
+env:
+  variables:
+    IMAGE_REPO_NAME: java-maven-app
+    IMAGE_TAG: latest
+
 phases:
-  install:
-    runtime-versions:
-      java: corretto17
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/$IMAGE_REPO_NAME
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com
 
   build:
     commands:
+      - echo Build started
       - mvn clean package
-      - docker build -t java-app .
+      - docker build -t $IMAGE_REPO_NAME .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
-      - docker tag java-app:latest $REPOSITORY_URI:latest
-      - docker push $REPOSITORY_URI:latest
+      - echo Pushing Docker image
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
