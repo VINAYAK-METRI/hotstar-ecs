@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+
+  build:
+    commands:
+      - mvn clean package
+      - docker build -t java-app .
+
+  post_build:
+    commands:
+      - docker tag java-app:latest $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:latest
